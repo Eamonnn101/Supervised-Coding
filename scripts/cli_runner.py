@@ -7,6 +7,8 @@ import logging
 import re
 import shutil
 import subprocess
+import threading
+import time
 from pathlib import Path
 from config import Config
 
@@ -115,6 +117,17 @@ def _extract_text_from_claude_json(raw: str) -> str:
     return raw
 
 
+HEARTBEAT_INTERVAL = 15  # seconds between status updates
+
+
+def _heartbeat_loop(step_name: str, stop_event: threading.Event) -> None:
+    """Print periodic status while a subprocess is running."""
+    start = time.monotonic()
+    while not stop_event.wait(HEARTBEAT_INTERVAL):
+        elapsed = int(time.monotonic() - start)
+        logger.info(f"[status] {step_name} running ({elapsed}s elapsed)...")
+
+
 def run_writer(
     prompt: str,
     config: Config,
@@ -122,7 +135,11 @@ def run_writer(
     cwd: str | None = None,
     timeout: int | None = None,
 ) -> dict:
-    """Call Codex CLI and return parsed JSON output."""
+    """Call Codex CLI and return parsed JSON output.
+
+    Prints periodic heartbeat status while Codex is running so the user
+    is not left wondering whether the process is stuck.
+    """
     check_cli_available(config.writer_cli)
     timeout = timeout or config.timeout_seconds
 
@@ -135,7 +152,13 @@ def run_writer(
         prompt,
     ]
 
-    logger.info(f"Running writer: {config.writer_cli} exec (model={config.writer_model})")
+    logger.info(f"[status] Starting {step_name}: {config.writer_cli} exec (model={config.writer_model})")
+
+    stop_event = threading.Event()
+    heartbeat = threading.Thread(
+        target=_heartbeat_loop, args=(step_name, stop_event), daemon=True
+    )
+    heartbeat.start()
 
     try:
         result = subprocess.run(
@@ -146,16 +169,23 @@ def run_writer(
             cwd=cwd or config.project_root,
         )
     except subprocess.TimeoutExpired as e:
+        stop_event.set()
+        logger.info(f"[status] {step_name} timed out after {timeout}s")
         raise CLITimeoutError(
             f"Writer CLI timed out after {timeout}s. Partial output: {e.stdout[:200] if e.stdout else 'none'}"
         )
+    finally:
+        stop_event.set()
+        heartbeat.join(timeout=2)
 
     if result.returncode != 0:
+        logger.info(f"[status] {step_name} failed (exit code {result.returncode})")
         logger.error(f"Writer stderr: {result.stderr[:500]}")
         raise CLIExecutionError(
             f"Writer CLI exited with code {result.returncode}: {result.stderr[:300]}"
         )
 
+    logger.info(f"[status] {step_name} completed successfully")
     return _parse_json_output(result.stdout, step_name, config.runtime_dir)
 
 
@@ -177,7 +207,12 @@ def run_reviewer(
         "--max-turns", "1",
     ]
 
-    logger.info(f"Running reviewer: {config.reviewer_cli} -p (model implied)")
+    # Only pass --model if explicitly configured; otherwise inherit from environment
+    if config.reviewer_model:
+        cmd.extend(["--model", config.reviewer_model])
+
+    model_label = config.reviewer_model or "environment default"
+    logger.info(f"Running reviewer: {config.reviewer_cli} -p (model={model_label})")
 
     try:
         result = subprocess.run(

@@ -1,4 +1,6 @@
-runtime/
+# Runtime artifacts are now stored in the target project under .supervised-coding/
+# Target projects should add .supervised-coding/ to their own .gitignore
+.supervised-coding/
 __pycache__/
 *.pyc
 .env

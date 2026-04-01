@@ -9,7 +9,10 @@ writer_model: gpt-5.4
 
 # Reviewer agent (reviews plans and patches)
 reviewer_cli: claude
-reviewer_model: claude-sonnet-4-6
+# reviewer_model: claude-sonnet-4-6
+# Leave blank or omit to use the active Claude Code environment model.
+# Set explicitly only when you need a specific model (e.g., headless/CI mode).
+# Precedence: explicit override > Claude Code environment default
 
 # Maximum revision attempts (to prevent infinite loops)
 max_plan_revision: 1
@@ -18,8 +21,9 @@ max_patch_revision: 1
 # Target project root (relative to this config file's directory)
 project_root: ../..
 
-# Runtime artifacts directory (relative to this config file's directory)
-runtime_dir: ../runtime
+# Runtime artifacts directory (relative to project_root)
+# Artifacts are stored inside the target project, not in the Supervised Coding repo
+runtime_dir: .supervised-coding
 
 # Validation commands to run after code implementation
 # Customize these for your project's tech stack
@@ -33,3 +37,7 @@ validation_commands:
 
 # CLI timeout in seconds (per invocation)
 timeout_seconds: 300
+
+# User-facing language: "auto" detects from conversation, "zh" for Chinese, "en" for English.
+# Internal Codex communication always stays in English regardless of this setting.
+user_language: auto

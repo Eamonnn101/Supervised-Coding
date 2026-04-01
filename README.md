@@ -49,15 +49,16 @@ project_name: my-project
 writer_cli: codex
 writer_model: o3                    # Codex writer model
 reviewer_cli: claude
-reviewer_model: claude-sonnet-4-6   # Claude reviewer model
+# reviewer_model: claude-sonnet-4-6  # omit to inherit from Claude Code environment
 project_root: ../../my-project      # relative to config/
-runtime_dir: ../runtime
+runtime_dir: .supervised-coding     # relative to project_root
 validation_commands:
   - npm test                        # your test commands
   - npm run lint
 timeout_seconds: 300
 max_plan_revision: 1
 max_patch_revision: 1
+user_language: auto                 # "auto", "zh", or "en"
 ```
 
 ## Usage
@@ -120,7 +121,9 @@ For project-level improvement, not feature implementation.
 
 ## Output Artifacts
 
-Each task gets an isolated runtime directory: `runtime/task-YYYYMMDD-HHMMSS/`
+Each task gets an isolated runtime directory inside the target project: `<project_root>/.supervised-coding/task-YYYYMMDD-HHMMSS/`
+
+**Important**: Add `.supervised-coding/` to your project's `.gitignore`.
 
 | Artifact | Description |
 |----------|-------------|
@@ -211,11 +214,46 @@ Supervised-Coding/
 ├── CLAUDE.md                  # Project context for Claude Code
 ├── requirements.txt           # pyyaml, rich, click
 └── .gitignore
+
+# In the target project:
+<project_root>/
+└── .supervised-coding/          # Runtime artifacts (add to .gitignore)
+    ├── task-YYYYMMDD-HHMMSS/    # Per-task isolated artifacts
+    ├── writer_feedback.json     # Global latest feedback
+    └── scores.tsv               # Metrics tracking
 ```
+
+## Reviewer Model Precedence
+
+1. **Explicit override**: set `reviewer_model` in config YAML → passed as `--model` to Claude CLI
+2. **Environment default**: omit or leave empty → inherits from the active Claude Code session
+
+For interactive use, omitting `reviewer_model` is recommended. For CI/headless mode, set it explicitly.
+
+## Codex Execution Status
+
+While Codex is running, periodic heartbeat status updates are logged every 15 seconds. States:
+
+- **Starting**: Codex process launched
+- **Running**: heartbeat every 15s with elapsed time
+- **Completed**: Codex finished successfully
+- **Failed**: Codex exited with an error
+- **Timed out**: Codex exceeded the configured timeout
+
+These are honest heartbeat-style updates — detailed per-step progress is not available from the Codex CLI.
+
+## User-Facing Language
+
+Set `user_language` in config (default: `"auto"`):
+- `"auto"`: detect language from user's conversation
+- `"zh"`: always respond to user in Chinese
+- `"en"`: always respond in English
+
+**Boundary**: All user-facing output (status, reviews, explanations) follows the user's language. Internal Codex communication (prompts, contracts, JSON artifacts) stays in English.
 
 ## Cost Optimization
 
-- Default reviewer model is `claude-sonnet-4-6` (cost-effective)
+- Reviewer model inherits from environment by default (no unnecessary model forcing)
 - Reviews happen only at key checkpoints (plan + patch), not on every edit
 - Max 1 plan revision + 1 patch revision bounds costs
 - Review Mode uses bounded context with token budgets (max 10 project files, 5 recent tasks)

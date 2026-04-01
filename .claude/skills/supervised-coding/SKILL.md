@@ -490,6 +490,79 @@ cd <mvp_dir> && python3 scripts/codex_cli.py generate-feedback \
 
 ---
 
+## User-Facing Language
+
+When `user_language` is `"auto"` (default), detect the user's language from their conversation. If the user writes in Chinese, respond to the user in Chinese for all user-facing output:
+
+- Status updates and progress messages
+- Review verdicts, summaries, and explanations
+- Report explanations shown to the user
+- Error messages and decision prompts
+
+**Keep internal Codex communication in English regardless of user language:**
+- Prompt templates (`prompts/*.md`) — always English
+- Writer contract, review policy — always English
+- Structured JSON artifacts (plan.json, review_patch.json, etc.) — field values stay English
+- Task descriptions sent to Codex — always English
+
+**Human-facing markdown reports** (`final_report.md`, `review_report.md`, `review_execution_report.md`) are generated in English because they contain structured data from English artifacts. When presenting report contents to the user, summarize/explain in the user's language.
+
+If `user_language` is explicitly set to `"zh"` or `"en"`, follow that setting instead of auto-detecting.
+
+---
+
+## Codex Execution Status
+
+While Codex is running, the system provides periodic heartbeat status updates via the logging system. You will see messages like:
+
+- `[status] Starting writer: codex exec (model=...)` — Codex is starting
+- `[status] writer running (15s elapsed)...` — Codex is actively working (every 15s)
+- `[status] writer completed successfully` — Codex finished
+- `[status] writer failed (exit code N)` — Codex failed
+- `[status] writer timed out after Ns` — Codex hit the timeout
+
+These are honest heartbeat-style updates. Detailed per-step progress is not available from the Codex CLI.
+
+When presenting these to the user, translate to the user's language if applicable and provide context (e.g., "Codex is still working on your task, 30 seconds so far..." / "Codex 正在处理您的任务，已运行 30 秒...").
+
+---
+
+## Runtime Location
+
+Runtime artifacts are stored **inside the target project**, not in the Supervised Coding tool repo:
+
+```
+<project_root>/
+  .supervised-coding/           ← runtime root
+    task-20260401-120000/       ← task-specific artifacts
+      plan.json
+      writer_summary.json
+      review_patch.json
+      writer_feedback.json
+      ...
+    writer_feedback.json        ← global latest feedback
+    scores.tsv                  ← metrics tracking
+```
+
+Target projects should add `.supervised-coding/` to their `.gitignore`.
+
+The `runtime_dir` config value is resolved relative to `project_root`. Default: `.supervised-coding`.
+
+---
+
+## Reviewer Model Precedence
+
+The reviewer model follows this precedence:
+
+1. **Explicit override**: If `reviewer_model` is set in the config YAML, that model is passed to the Claude CLI via `--model`
+2. **Environment default**: If `reviewer_model` is omitted or empty, the Claude CLI uses whatever model the Claude Code environment provides — no `--model` flag is passed
+
+For interactive use (Claude Code skill), omitting `reviewer_model` is recommended — you get the environment's active model.
+
+For CI/headless mode (`main.py`), set `reviewer_model` explicitly since there is no interactive Claude Code session to inherit from.
+
+---
+
 ## Rules
 
 - NEVER skip writer feedback generation

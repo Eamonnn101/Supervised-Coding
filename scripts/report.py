@@ -28,7 +28,7 @@ def generate_report(
         f"\n**Generated**: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}",
         f"**Project**: {config.project_name}",
         f"**Writer Model**: {config.writer_model}",
-        f"**Reviewer Model**: {config.reviewer_model}",
+        f"**Reviewer Model**: {config.reviewer_model or 'environment default'}",
         "",
         "---",
         "",

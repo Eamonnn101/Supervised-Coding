@@ -5,7 +5,7 @@ writer_cli: codex
 writer_model: gpt-5.4
 
 reviewer_cli: claude
-reviewer_model: claude-sonnet-4-6
+# reviewer_model: claude-sonnet-4-6  # omit to inherit from Claude Code environment
 
 max_plan_revision: 1
 max_patch_revision: 1
@@ -13,7 +13,8 @@ max_patch_revision: 1
 # Point to the test project directory
 project_root: ../../test-project
 
-runtime_dir: ../runtime
+# Runtime artifacts are stored under project_root
+runtime_dir: .supervised-coding
 
 validation_commands:
   - python3 test_app.py

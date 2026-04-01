@@ -21,6 +21,14 @@ Dual-agent coding: Codex (writer) generates code, Claude Code (reviewer/orchestr
 
 **Escalate Mode**: Auto-triggered from Fast when escalation thresholds are exceeded. Not manually invoked.
 
+## Runtime Location
+
+Runtime artifacts are stored **inside the target project** at `<project_root>/.supervised-coding/`, not in this tool repo. Each task gets an isolated subdirectory: `.supervised-coding/task-YYYYMMDD-HHMMSS/`.
+
+Target projects should add `.supervised-coding/` to their `.gitignore`.
+
+The `runtime_dir` config value is resolved relative to `project_root`. Default: `.supervised-coding`.
+
 ## Writer Feedback Loop (HARD REQUIREMENT)
 
 Every patch review that produces `review_patch.json` generates `writer_feedback.json` with: verdict, must_fix, avoid_next_time, nice_to_have, writer_instruction, task_area, affected_files. Injected into writer's next prompt automatically. Only relevant feedback is injected (matched by task_area or file overlap).
@@ -31,11 +39,26 @@ Every patch review that produces `review_patch.json` generates `writer_feedback.
 
 ## Task Isolation
 
-Interactive/skill paths use isolated task runtimes: `runtime/task-YYYYMMDD-HHMMSS/` with all artifacts per task. `main.py` (CI/headless) still writes to `runtime/` root unless explicitly migrated to task sessions.
+Interactive/skill paths use isolated task runtimes: `.supervised-coding/task-YYYYMMDD-HHMMSS/` with all artifacts per task. `main.py` (CI/headless) still writes to the runtime root unless explicitly migrated to task sessions.
 
 ## Git Safety
 
 Will NOT auto-init git in Fast Mode. Full Mode can bootstrap with user confirmation.
+
+## Reviewer Model Precedence
+
+1. **Explicit override**: set `reviewer_model` in config YAML → passed as `--model` to Claude CLI
+2. **Environment default**: omit `reviewer_model` → inherits from the active Claude Code session
+
+Interactive use should omit `reviewer_model`. CI/headless mode should set it explicitly.
+
+## User-Facing Language
+
+`user_language` config (default: `"auto"`). When user writes in Chinese, Claude responds in Chinese. Internal Codex communication (prompts, contracts, structured JSON) stays in English. See SKILL.md for full rules.
+
+## Codex Execution Status
+
+Periodic heartbeat status updates are logged while Codex runs (every 15s). States: starting → running → completed / failed / timed out. Claude should surface these to the user in their language.
 
 ## Key Files
 

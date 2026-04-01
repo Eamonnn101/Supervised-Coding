@@ -13,15 +13,16 @@ import yaml
 class Config:
     project_name: str = "unnamed-project"
     writer_model: str = "gpt-5.4"
-    reviewer_model: str = "claude-sonnet-4-6"
+    reviewer_model: str = ""  # empty = inherit from Claude Code environment
     max_plan_revision: int = 1
     max_patch_revision: int = 1
     validation_commands: list[str] = field(default_factory=list)
     writer_cli: str = "codex"
     reviewer_cli: str = "claude"
     project_root: str = "."
-    runtime_dir: str = "runtime"
+    runtime_dir: str = ".supervised-coding"
     timeout_seconds: int = 300
+    user_language: str = "auto"  # "auto" = detect from conversation; "zh" = Chinese; "en" = English
 
     # Resolved at runtime — not from YAML
     task_id: str = ""
@@ -47,14 +48,18 @@ def load_config(path: str) -> Config:
         writer_cli=raw.get("writer_cli", Config.writer_cli),
         reviewer_cli=raw.get("reviewer_cli", Config.reviewer_cli),
         project_root=raw.get("project_root", "."),
-        runtime_dir=raw.get("runtime_dir", "runtime"),
+        runtime_dir=raw.get("runtime_dir", Config.runtime_dir),
         timeout_seconds=raw.get("timeout_seconds", Config.timeout_seconds),
+        user_language=raw.get("user_language", Config.user_language),
     )
 
     # Resolve paths relative to config file location
     config_dir = config_path.parent
     config.project_root = str((config_dir / config.project_root).resolve())
-    config.runtime_dir = str((config_dir / ".." / config.runtime_dir).resolve())
+
+    # Resolve runtime_dir relative to project_root (runtime lives inside the target project)
+    project_root_path = Path(config.project_root)
+    config.runtime_dir = str((project_root_path / config.runtime_dir).resolve())
 
     return config
 
