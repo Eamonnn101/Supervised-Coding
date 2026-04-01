@@ -32,7 +32,7 @@ claude --version
 ## Setup
 
 ```bash
-cd ai-supervised-coding-mvp
+cd Supervised-Coding
 pip install -r requirements.txt
 ```
 
@@ -177,7 +177,7 @@ finalize-review   Collect post-execution artifacts
 ## Project Structure
 
 ```
-ai-supervised-coding-mvp/
+Supervised-Coding/
 ├── .claude/skills/supervised-coding/
 │   └── SKILL.md              # Primary orchestration (Claude Code skill)
 ├── config/
