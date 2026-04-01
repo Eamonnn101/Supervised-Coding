@@ -1,0 +1,35 @@
+# AI Supervised Coding MVP — Project Configuration
+# Copy this file and adjust for your project.
+
+project_name: sample-project
+
+# Writer agent (generates plans and writes code)
+writer_cli: codex
+writer_model: gpt-5.4
+
+# Reviewer agent (reviews plans and patches)
+reviewer_cli: claude
+reviewer_model: claude-sonnet-4-6
+
+# Maximum revision attempts (to prevent infinite loops)
+max_plan_revision: 1
+max_patch_revision: 1
+
+# Target project root (relative to this config file's directory)
+project_root: ../..
+
+# Runtime artifacts directory (relative to this config file's directory)
+runtime_dir: ../runtime
+
+# Validation commands to run after code implementation
+# Customize these for your project's tech stack
+validation_commands:
+  # - pnpm lint
+  # - pnpm typecheck
+  # - pnpm test
+  # - pnpm build
+  # - pytest
+  # - cargo test
+
+# CLI timeout in seconds (per invocation)
+timeout_seconds: 300

@@ -1,0 +1,24 @@
+{
+  "full_review_on_project_start": true,
+  "fast_mode_default": true,
+  "escalate_if_files_changed_gt": 5,
+  "escalate_if_diff_lines_gt": 250,
+  "escalate_if_new_dependency": true,
+  "escalate_if_build_fails": true,
+  "escalate_if_user_requests_review": true,
+  "escalate_if_writer_low_confidence": true,
+  "escalate_if_unresolved_must_fix_exists": true,
+  "escalate_on_config_change_patterns": [
+    "package.json",
+    "package-lock.json",
+    "tsconfig",
+    "vite.config",
+    "webpack.config",
+    "next.config",
+    "router",
+    "store",
+    ".env"
+  ],
+  "final_gate_if_files_changed_gt": 10,
+  "final_gate_if_diff_lines_gt": 500
+}

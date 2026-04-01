@@ -1,0 +1,21 @@
+# Config for test-project
+project_name: test-project
+
+writer_cli: codex
+writer_model: gpt-5.4
+
+reviewer_cli: claude
+reviewer_model: claude-sonnet-4-6
+
+max_plan_revision: 1
+max_patch_revision: 1
+
+# Point to the test project directory
+project_root: ../../test-project
+
+runtime_dir: ../runtime
+
+validation_commands:
+  - python3 test_app.py
+
+timeout_seconds: 600
